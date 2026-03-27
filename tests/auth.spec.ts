@@ -1,13 +1,17 @@
 import { test, expect } from '@playwright/test'
 
 test.describe('Authentication', () => {
-  // Use fresh context (no stored auth) for auth tests
   test.use({ storageState: { cookies: [], origins: [] } })
 
-  test('unauthenticated user is redirected to login', async ({ page }) => {
-    await page.goto('/')
+  test('unauthenticated user visiting dashboard is redirected to login', async ({ page }) => {
+    await page.goto('/dashboard')
     await page.waitForURL('**/login')
     await expect(page.getByText('Welcome back')).toBeVisible()
+  })
+
+  test('landing page is accessible without auth', async ({ page }) => {
+    await page.goto('/')
+    await expect(page.getByText('Ship projects')).toBeVisible()
   })
 
   test('user can log in with correct credentials', async ({ page }) => {
@@ -16,7 +20,7 @@ test.describe('Authentication', () => {
     await page.getByLabel('Password').fill(process.env.TEST_USER_A_PASSWORD!)
     await page.getByRole('button', { name: 'Sign in' }).click()
 
-    await page.waitForURL('/', { timeout: 15000 })
+    await page.waitForURL('**/dashboard', { timeout: 15000 })
     await expect(page.getByText('Projects')).toBeVisible()
   })
 
@@ -37,20 +41,17 @@ test.describe('Authentication', () => {
   })
 
   test('user can log out', async ({ page }) => {
-    // First log in
     await page.goto('/login')
     await page.getByLabel('Email').fill(process.env.TEST_USER_A_EMAIL!)
     await page.getByLabel('Password').fill(process.env.TEST_USER_A_PASSWORD!)
     await page.getByRole('button', { name: 'Sign in' }).click()
-    await page.waitForURL('/', { timeout: 15000 })
+    await page.waitForURL('**/dashboard', { timeout: 15000 })
 
-    // Now log out
     await page.getByRole('button', { name: 'Sign out' }).click()
     await page.waitForURL('**/login', { timeout: 15000 })
     await expect(page.getByText('Welcome back')).toBeVisible()
 
-    // Verify can't access dashboard
-    await page.goto('/')
+    await page.goto('/dashboard')
     await page.waitForURL('**/login')
   })
 })

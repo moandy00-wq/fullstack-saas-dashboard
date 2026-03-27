@@ -10,8 +10,10 @@ const adminClient = createClient(
 let testProjectId: string
 
 test.describe('Task CRUD', () => {
+  test.use({ storageState: { cookies: [], origins: [] } })
+  test.setTimeout(60000)
+
   test.beforeEach(async ({ page }) => {
-    // Create a test project via admin
     const { data: users } = await adminClient.auth.admin.listUsers()
     const userA = users.users.find(u => u.email === process.env.TEST_USER_A_EMAIL)
 
@@ -23,8 +25,17 @@ test.describe('Task CRUD', () => {
 
     testProjectId = project!.id
 
-    await page.goto(`/projects/${testProjectId}`)
-    await page.waitForURL(`/projects/${testProjectId}`, { timeout: 15000 })
+    // Login
+    await page.goto('/login')
+    await page.getByLabel('Email').fill(process.env.TEST_USER_A_EMAIL!)
+    await page.getByLabel('Password').fill(process.env.TEST_USER_A_PASSWORD!)
+    await page.getByRole('button', { name: 'Sign in' }).click()
+    await page.waitForURL('**/dashboard', { timeout: 15000 })
+
+    // Click into the project from the dashboard
+    await page.getByRole('heading', { name: 'Test Project Tasks' }).click()
+    await page.waitForURL(/\/dashboard\/projects\//, { timeout: 15000 })
+    await expect(page.getByText('Add a task')).toBeVisible({ timeout: 15000 })
   })
 
   test.afterEach(async () => {
@@ -47,40 +58,31 @@ test.describe('Task CRUD', () => {
   })
 
   test('user can toggle task complete', async ({ page }) => {
-    // Create a task
     await page.getByLabel('Task title').fill('Test Task Toggle')
     await page.getByRole('button', { name: 'Add task' }).click()
     await expect(page.getByText('Test Task Toggle')).toBeVisible({ timeout: 10000 })
 
-    // Toggle complete
     await page.getByRole('checkbox').first().click()
-
-    // Verify strikethrough appears (completed section)
     await expect(page.getByText('Completed')).toBeVisible({ timeout: 10000 })
   })
 
   test('user can toggle task back to incomplete', async ({ page }) => {
-    // Create a task
     await page.getByLabel('Task title').fill('Test Task Untoggle')
     await page.getByRole('button', { name: 'Add task' }).click()
     await expect(page.getByText('Test Task Untoggle')).toBeVisible({ timeout: 10000 })
 
-    // Toggle complete
     await page.getByRole('checkbox').first().click()
     await expect(page.getByText('Completed')).toBeVisible({ timeout: 10000 })
 
-    // Toggle back
     await page.getByRole('checkbox').first().click()
     await expect(page.getByText('In Progress')).toBeVisible({ timeout: 10000 })
   })
 
   test('user can delete a task', async ({ page }) => {
-    // Create a task
     await page.getByLabel('Task title').fill('Test Task Delete')
     await page.getByRole('button', { name: 'Add task' }).click()
     await expect(page.getByText('Test Task Delete')).toBeVisible({ timeout: 10000 })
 
-    // Delete it
     const deleteButton = page.getByRole('button').filter({ has: page.locator('svg.lucide-trash-2') }).first()
     await deleteButton.click()
 

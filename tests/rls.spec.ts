@@ -9,9 +9,18 @@ const adminClient = createClient(
 
 let userAProjectId: string
 
+async function loginAsUserB(page: import('@playwright/test').Page) {
+  await page.goto('/login')
+  await page.getByLabel('Email').fill(process.env.TEST_USER_B_EMAIL!)
+  await page.getByLabel('Password').fill(process.env.TEST_USER_B_PASSWORD!)
+  await page.getByRole('button', { name: 'Sign in' }).click()
+  await page.waitForURL('**/dashboard', { timeout: 15000 })
+}
+
 test.describe('Row Level Security', () => {
+  test.use({ storageState: { cookies: [], origins: [] } })
+
   test.beforeAll(async () => {
-    // Create a project for User A via admin
     const { data: users } = await adminClient.auth.admin.listUsers()
     const userA = users.users.find(u => u.email === process.env.TEST_USER_A_EMAIL)
 
@@ -23,7 +32,6 @@ test.describe('Row Level Security', () => {
 
     userAProjectId = project!.id
 
-    // Also create a task in that project
     await adminClient
       .from('tasks')
       .insert({
@@ -39,41 +47,23 @@ test.describe('Row Level Security', () => {
     }
   })
 
-  test('User B cannot see User A project in dashboard', async ({ browser }) => {
-    const context = await browser.newContext({
-      storageState: 'playwright/.auth/user-b.json',
-    })
-    const page = await context.newPage()
-
-    await page.goto('/')
-    await page.waitForURL('/', { timeout: 15000 })
+  test('User B cannot see User A project in dashboard', async ({ page }) => {
+    await loginAsUserB(page)
 
     await expect(page.getByText('User A Secret Project')).not.toBeVisible()
-    await context.close()
   })
 
-  test('User B cannot access User A project via direct URL', async ({ browser }) => {
-    const context = await browser.newContext({
-      storageState: 'playwright/.auth/user-b.json',
-    })
-    const page = await context.newPage()
+  test('User B cannot access User A project via direct URL', async ({ page }) => {
+    await loginAsUserB(page)
+    await page.goto(`/dashboard/projects/${userAProjectId}`)
 
-    await page.goto(`/projects/${userAProjectId}`)
-
-    // Should see not found page
     await expect(page.getByText(/not found|doesn't exist/i)).toBeVisible({ timeout: 15000 })
-    await context.close()
   })
 
-  test('User B cannot see User A tasks', async ({ browser }) => {
-    const context = await browser.newContext({
-      storageState: 'playwright/.auth/user-b.json',
-    })
-    const page = await context.newPage()
-
-    await page.goto(`/projects/${userAProjectId}`)
+  test('User B cannot see User A tasks', async ({ page }) => {
+    await loginAsUserB(page)
+    await page.goto(`/dashboard/projects/${userAProjectId}`)
 
     await expect(page.getByText('User A Secret Task')).not.toBeVisible()
-    await context.close()
   })
 })
