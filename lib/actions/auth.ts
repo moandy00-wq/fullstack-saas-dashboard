@@ -21,18 +21,25 @@ export async function signUpAction(
 
   const supabase = createClient()
 
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email: email.trim(),
     password,
   })
 
   if (error) {
+    console.error('Signup error:', error.message)
     if (error.message.toLowerCase().includes('already')) {
       return { error: 'An account with this email already exists.' }
     }
-    return { error: 'Something went wrong. Please try again.' }
+    return { error: error.message }
   }
 
+  // If email confirmation is disabled, user is auto-confirmed and session exists
+  if (data.session) {
+    redirect('/dashboard')
+  }
+
+  // If email confirmation is enabled, redirect to check-email page
   redirect('/auth/check-email')
 }
 
