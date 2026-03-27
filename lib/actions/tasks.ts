@@ -29,6 +29,9 @@ export async function createTaskAction(
     if (dueDate < today) {
       return { fieldErrors: { due_date: 'Due date must be today or a future date' } }
     }
+    if (dueDate > '2050-12-31') {
+      return { fieldErrors: { due_date: 'Due date cannot be later than 2050' } }
+    }
   }
 
   const validPriorities = ['High', 'Medium', 'Low'] as const

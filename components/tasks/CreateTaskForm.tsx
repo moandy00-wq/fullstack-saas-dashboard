@@ -81,6 +81,7 @@ export function CreateTaskForm({ projectId }: { projectId: string }) {
             name="due_date"
             type="date"
             min={new Date().toISOString().split('T')[0]}
+            max="2050-12-31"
             className="border-zinc-700 bg-zinc-800/80 text-white"
           />
           {state.fieldErrors?.due_date && (

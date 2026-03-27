@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
 import type { ActionResult } from '@/types'
 
 const initialState: ActionResult = {}
@@ -16,7 +17,13 @@ export default function LoginPage() {
 
   return (
     <Card className="border-zinc-800 bg-zinc-900/90 backdrop-blur-sm animate-scale-in">
-      <CardHeader className="space-y-1">
+      <div className="px-6 pt-5">
+        <Link href="/" className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-500 transition-colors hover:text-white">
+          <ArrowLeft className="h-3 w-3" />
+          Back to home
+        </Link>
+      </div>
+      <CardHeader className="space-y-1 pt-3">
         <CardTitle className="text-2xl font-bold text-white">Welcome back</CardTitle>
         <CardDescription className="text-zinc-400">
           Sign in to your account to continue
